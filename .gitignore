@@ -1,0 +1,31 @@
+#R / RStudio
+
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user
+
+# renv local library
+renv/library/
+renv/staging/
+renv/sandbox/
+
+# OS files 
+.DS_Store
+Thumbs.db
+
+# Input data
+
+data/*
+!data/.gitkeep
+!data/README.md
+
+#Generated outputs
+
+results/*
+!results/.gitkeep
+
+figures/*
+!figures/.gitkeep
+
+
