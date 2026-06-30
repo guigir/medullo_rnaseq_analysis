@@ -1,31 +1,41 @@
-#R / RStudio
-
+# R session files
 .Rhistory
 .RData
 .Ruserdata
-.Rproj.user
+.Rproj.user/
 
-# renv local library
-renv/library/
-renv/staging/
-renv/sandbox/
+# Quarto / knitr
+*_cache/
+*_files/
+figs/
 
-# OS files 
+# Generated analysis outputs
+DESeq2_redo_clean/
+DESeq2_redo_clean_v2/
+figures/
+results/
+
+# Accidental plotting artifacts
+Rplots.pdf
+
+# Keep directory placeholders if present
+!DESeq2_redo_clean/.gitkeep
+!DESeq2_redo_clean_v2/.gitkeep
+!figures/.gitkeep
+!results/.gitkeep
+
+# Large local data / intermediate objects
+*.rds
+*.RDS
+*.h5ad
+*.h5
+*.loom
+
+# System files
 .DS_Store
 Thumbs.db
 
-# Input data
-
-data/*
-!data/.gitkeep
-!data/README.md
-
-#Generated outputs
-
-results/*
-!results/.gitkeep
-
-figures/*
-!figures/.gitkeep
-
-
+# Temporary files
+*.tmp
+*.bak
+*.log
