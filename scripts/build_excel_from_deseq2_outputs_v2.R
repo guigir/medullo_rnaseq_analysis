@@ -14,12 +14,11 @@ suppressPackageStartupMessages({
 # =====================
 # 1) Parameters
 # =====================
-setwd('~/Bureau/Guillaume/SOUTH_ROCK/medullo_rnaseq/medullo_rnaseq_analysis/new_analysis_13_10/')
 alpha          <- 0.05
 fc_cut         <- 1.5
-path_de_csv    <- "../DESeq2_redo_clean_v2/DESeq2_results_shrunk_cleaned_symbol.csv"
-path_counts    <- "../data/expr_matrix.txt"
-out_xlsx       <- "../DESeq2_redo_clean/DESeq2_results_with_counts.xlsx"
+path_de_csv <- "DESeq2_redo_clean/DESeq2_results_shrunk.csv"
+path_counts <- "data/expr_matrix.txt"
+out_xlsx <- "DESeq2_redo_clean/DESeq2_results_with_counts.xlsx"
 
 # Ordre souhaité. Les colonnes manquantes seront signalées puis omises.
 requested_cols <- c(

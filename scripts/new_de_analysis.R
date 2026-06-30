@@ -3,18 +3,19 @@ suppressPackageStartupMessages({
   library(DESeq2)
   library(AnnotationDbi)
   library(org.Hs.eg.db)
+  library(tibble)
+  library(dplyr)
+  library(readxl)
 })
 
 ## ========= PARAMS =========
-setwd('~/Bureau/Guillaume/SOUTH_ROCK/medullo_rnaseq/medullo_rnaseq_analysis/scripts/')
-path_expr      <- "../data/expr_matrix.txt"  
+path_expr <- "data/expr_matrix.txt"
+out_dir <- "DESeq2_redo_clean"
 alpha          <- 0.05                        # FDR
 fc_cut         <- 1.5                         # seuil FC
 contrast_ref   <- "HDMB03_GFP_cells"          # condition de référence
-contrast_treat <- "cb_parenchyma"             # condition d'intérêt 
-out_dir        <- "../DESeq2_redo_clean"
-use_symbol_out <- TRUE                        
-
+contrast_treat <- "cb_parenchyma"             # condition d'intérêt
+use_symbol_out <- TRUE
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 ## ========= 1) Lecture de la matrice =========
@@ -81,44 +82,70 @@ tab <- resLFC %>%
   ) %>%
   dplyr::select(GENE, log2FoldChange, FoldChange_signed, FoldChange, baseMean, lfcSE, pvalue, padj)
 
-## ========= 6bis) Annotation SYMBOL =========
-if (use_symbol_out) {
-  mp <- AnnotationDbi::select(org.Hs.eg.db, keys = tab$GENE,
-                              keytype = "ENSEMBL", columns = c("ENSEMBL", "SYMBOL")) %>%
-    as_tibble() %>% distinct()
-  tab <- tab %>%
-    left_join(mp, by = c("GENE" = "ENSEMBL")) %>%
-    relocate(SYMBOL, .after = GENE)
-}
+sym <- AnnotationDbi::mapIds(
+  org.Hs.eg.db,
+  keys = tab$GENE,
+  keytype = "ENSEMBL",
+  column = "SYMBOL",
+  multiVals = "first"
+)
+
+tab$SYMBOL <- sym[tab$GENE]
+
+
+## ========= 6bisbis) Annotation SYMBOL sans duplication =========
+
+old_annot_file <- "~/Bureau/Guillaume/SOUTH_ROCK/medullo_rnaseq/transfer_10437936_files_78dfbf2c/DE_results_cb_parenchyma_vs_HDMB03_GFP_cells_BATCH_CORRECTED_FULL_ANNOTATIONST.xlsx"
+old_annot_sheet <- 1  #
+
+old_annot <- readxl::read_excel(old_annot_file, sheet = old_annot_sheet) %>%
+  as_tibble() %>%
+  dplyr::select(ensemblID, symbol) %>%
+  dplyr::mutate(
+    ensemblID_clean = sub("\\.\\d+$", "", as.character(ensemblID)),
+    symbol_old = as.character(symbol),
+    symbol_old = dplyr::na_if(symbol_old, "")
+  ) %>%
+  dplyr::filter(!is.na(ensemblID_clean), ensemblID_clean != "") %>%
+  dplyr::group_by(ensemblID_clean) %>%
+  dplyr::arrange(
+    dplyr::desc(!is.na(symbol_old)),
+    startsWith(symbol_old, "LOC")
+  ) %>%
+  dplyr::slice(1) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(GENE_clean = ensemblID_clean, SYMBOL_OLD = symbol_old)
+
+# Fallback org.Hs.eg.db, mais sans créer de doublons
+symbol_orgdb <- AnnotationDbi::mapIds(
+  org.Hs.eg.db,
+  keys = sub("\\.\\d+$", "", tab$GENE),
+  keytype = "ENSEMBL",
+  column = "SYMBOL",
+  multiVals = "first"
+)
+
+tab <- tab %>%
+  dplyr::mutate(
+    GENE_clean = sub("\\.\\d+$", "", as.character(GENE)),
+    SYMBOL_ORGDB = unname(symbol_orgdb[GENE_clean])
+  ) %>%
+  dplyr::left_join(old_annot, by = "GENE_clean") %>%
+  dplyr::mutate(
+    SYMBOL = dplyr::case_when(
+      !is.na(SYMBOL_OLD) & SYMBOL_OLD != "" ~ SYMBOL_OLD,
+      !is.na(SYMBOL_ORGDB) & SYMBOL_ORGDB != "" ~ SYMBOL_ORGDB,
+      TRUE ~ GENE
+    )
+  ) %>%
+  dplyr::select(-GENE_clean, -SYMBOL_OLD, -SYMBOL_ORGDB) %>%
+  dplyr::relocate(SYMBOL, .after = GENE)
+
 
 tab <- tab %>%
   arrange(padj, desc(abs(log2FoldChange)))
 
 write.csv(tab, file.path(out_dir, "DESeq2_results_shrunk.csv"), row.names = FALSE)
-
-
-## ========= 6bisbis) Annotation SYMBOL sans duplication =========
-
-if (use_symbol_out) {
-  mp <- AnnotationDbi::select(
-    org.Hs.eg.db,
-    keys = tab$GENE,
-    keytype = "ENSEMBL",
-    columns = c("ENSEMBL", "SYMBOL")
-  ) %>%
-    as_tibble() %>%
-    filter(!is.na(SYMBOL)) %>%
-    group_by(ENSEMBL) %>%
-    summarise(
-      SYMBOL = paste(unique(SYMBOL), collapse = ";"),
-      .groups = "drop"
-    )
-  
-  tab <- tab %>%
-    left_join(mp, by = c("GENE" = "ENSEMBL")) %>%
-    relocate(SYMBOL, .after = GENE)
-}
-
 
 
 ## ========= 7) Listes UP / DOWN selon seuils =========
