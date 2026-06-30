@@ -95,7 +95,7 @@ tab$SYMBOL <- sym[tab$GENE]
 
 ## ========= 6bisbis) Annotation SYMBOL sans duplication =========
 
-old_annot_file <- "~/Bureau/Guillaume/SOUTH_ROCK/medullo_rnaseq/transfer_10437936_files_78dfbf2c/DE_results_cb_parenchyma_vs_HDMB03_GFP_cells_BATCH_CORRECTED_FULL_ANNOTATIONST.xlsx"
+old_annot_file <- "datagene_annotation_backup.xlsx"
 old_annot_sheet <- 1  #
 
 old_annot <- readxl::read_excel(old_annot_file, sheet = old_annot_sheet) %>%
@@ -112,7 +112,7 @@ old_annot <- readxl::read_excel(old_annot_file, sheet = old_annot_sheet) %>%
     dplyr::desc(!is.na(symbol_old)),
     startsWith(symbol_old, "LOC")
   ) %>%
-  dplyr::slice(1) %>%
+  dplyr::slice(1) %>% 
   dplyr::ungroup() %>%
   dplyr::select(GENE_clean = ensemblID_clean, SYMBOL_OLD = symbol_old)
 
